@@ -58,7 +58,7 @@ template withLock(t, x: untyped) =
   x
   release(t.lock)
 
-template withValue*[A, B](t: var SharedTable[A, B], key: A,
+template withValue*[A, B](t: var SharedTable[A, B], key: A or KeyOf[A],
                           value, body: untyped) =
   ## retrieves the value at ``t[key]``.
   ## `value` can be modified in the scope of the ``withValue`` call.
@@ -82,7 +82,7 @@ template withValue*[A, B](t: var SharedTable[A, B], key: A,
   finally:
     release(t.lock)
 
-template withValue*[A, B](t: var SharedTable[A, B], key: A,
+template withValue*[A, B](t: var SharedTable[A, B], key: A or KeyOf[A],
                           value, body1, body2: untyped) =
   ## retrieves the value at ``t[key]``.
   ## `value` can be modified in the scope of the ``withValue`` call.
@@ -111,7 +111,7 @@ template withValue*[A, B](t: var SharedTable[A, B], key: A,
   finally:
     release(t.lock)
 
-proc mget*[A, B](t: var SharedTable[A, B], key: A): var B =
+proc mget*[A, B](t: var SharedTable[A, B], key: A or KeyOf[A]): var B =
   ## retrieves the value at ``t[key]``. The value can be modified.
   ## If `key` is not in `t`, the ``KeyError`` exception is raised.
   withLock t:
@@ -138,8 +138,9 @@ proc hasKeyOrPut*[A, B](t: var SharedTable[A, B], key: A, val: B): bool =
   withLock t:
     hasKeyOrPutImpl(enlarge)
 
-proc withKey*[A, B](t: var SharedTable[A, B], key: A,
-                    mapper: proc(key: A, val: var B, pairExists: var bool)) =
+proc withKey*[A, B](t: var SharedTable[A, B], key: A or KeyOf[A],
+                    mapper: proc(key: A or KeyOf[A], val: var B,
+                                 pairExists: var bool)) =
   ## Computes a new mapping for the ``key`` with the specified ``mapper``
   ## procedure.
   ##
@@ -197,7 +198,7 @@ proc add*[A, B](t: var SharedTable[A, B], key: A, val: B) =
   withLock t:
     addImpl(enlarge)
 
-proc del*[A, B](t: var SharedTable[A, B], key: A) =
+proc del*[A, B](t: var SharedTable[A, B], key: A or KeyOf[A]) =
   ## deletes `key` from hash table `t`.
   withLock t:
     delImpl()

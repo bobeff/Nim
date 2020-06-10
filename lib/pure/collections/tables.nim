@@ -338,7 +338,7 @@ proc toTable*[A, B](pairs: openArray[(A, B)]): Table[A, B] =
   result = initTable[A, B](rightSize(pairs.len))
   for key, val in items(pairs): result[key] = val
 
-proc `[]`*[A, B](t: Table[A, B], key: A): B =
+proc `[]`*[A, B](t: Table[A, B], key: A or KeyOf[A]): B =
   ## Retrieves the value at ``t[key]``.
   ##
   ## If ``key`` is not in ``t``, the ``KeyError`` exception is raised.
@@ -361,7 +361,7 @@ proc `[]`*[A, B](t: Table[A, B], key: A): B =
       echo a['z']
   get(t, key)
 
-proc `[]`*[A, B](t: var Table[A, B], key: A): var B =
+proc `[]`*[A, B](t: var Table[A, B], key: A or KeyOf[A]): var B =
   ## Retrieves the value at ``t[key]``. The value can be modified.
   ##
   ## If ``key`` is not in ``t``, the ``KeyError`` exception is raised.
@@ -377,7 +377,7 @@ proc `[]`*[A, B](t: var Table[A, B], key: A): var B =
   ##   the table
   get(t, key)
 
-proc hasKey*[A, B](t: Table[A, B], key: A): bool =
+proc hasKey*[A, B](t: Table[A, B], key: A or KeyOf[A]): bool =
   ## Returns true if ``key`` is in the table ``t``.
   ##
   ## See also:
@@ -395,7 +395,7 @@ proc hasKey*[A, B](t: Table[A, B], key: A): bool =
   var hc: Hash
   result = rawGet(t, key, hc) >= 0
 
-proc contains*[A, B](t: Table[A, B], key: A): bool =
+proc contains*[A, B](t: Table[A, B], key: A or KeyOf[A]): bool =
   ## Alias of `hasKey proc<#hasKey,Table[A,B],A>`_ for use with
   ## the ``in`` operator.
   runnableExamples:
@@ -425,7 +425,7 @@ proc hasKeyOrPut*[A, B](t: var Table[A, B], key: A, val: B): bool =
 
   hasKeyOrPutImpl(enlarge)
 
-proc getOrDefault*[A, B](t: Table[A, B], key: A): B =
+proc getOrDefault*[A, B](t: Table[A, B], key: A or KeyOf[A]): B =
   ## Retrieves the value at ``t[key]`` if ``key`` is in ``t``. Otherwise, the
   ## default initialization value for type ``B`` is returned (e.g. 0 for any
   ## integer type).
@@ -444,7 +444,7 @@ proc getOrDefault*[A, B](t: Table[A, B], key: A): B =
 
   getOrDefaultImpl(t, key)
 
-proc getOrDefault*[A, B](t: Table[A, B], key: A, default: B): B =
+proc getOrDefault*[A, B](t: Table[A, B], key: A or KeyOf[A], default: B): B =
   ## Retrieves the value at ``t[key]`` if ``key`` is in ``t``.
   ## Otherwise, ``default`` is returned.
   ##
@@ -499,7 +499,7 @@ proc add*[A, B](t: var Table[A, B], key: A, val: B) =
   ## (key, value) pair in the table without introducing duplicates.
   addImpl(enlarge)
 
-proc del*[A, B](t: var Table[A, B], key: A) =
+proc del*[A, B](t: var Table[A, B], key: A or KeyOf[A]) =
   ## Deletes ``key`` from hash table ``t``. Does nothing if the key does not exist.
   ##
   ## See also:
@@ -514,7 +514,7 @@ proc del*[A, B](t: var Table[A, B], key: A) =
 
   delImpl()
 
-proc pop*[A, B](t: var Table[A, B], key: A, val: var B): bool =
+proc pop*[A, B](t: var Table[A, B], key: A or KeyOf[A], val: var B): bool =
   ## Deletes the ``key`` from the table.
   ## Returns ``true``, if the ``key`` existed, and sets ``val`` to the
   ## mapping of the key. Otherwise, returns ``false``, and the ``val`` is
@@ -542,7 +542,8 @@ proc pop*[A, B](t: var Table[A, B], key: A, val: var B): bool =
     val = move(t.data[index].val)
     delImplIdx(t, index)
 
-proc take*[A, B](t: var Table[A, B], key: A, val: var B): bool {.inline.} =
+proc take*[A, B](t: var Table[A, B], key: A or KeyOf[A],
+                 val: var B): bool {.inline.} =
   ## Alias for:
   ## * `pop proc<#pop,Table[A,B],A,B>`_
   pop(t, key, val)
@@ -586,7 +587,8 @@ proc indexBy*[A, B, C](collection: A, index: proc(x: B): C): Table[C, B] =
 
 
 
-template withValue*[A, B](t: var Table[A, B], key: A, value, body: untyped) =
+template withValue*[A, B](t: var Table[A, B], key: A or KeyOf[A], value,
+                          body: untyped) =
   ## Retrieves the value at ``t[key]``.
   ##
   ## ``value`` can be modified in the scope of the ``withValue`` call.
@@ -606,7 +608,7 @@ template withValue*[A, B](t: var Table[A, B], key: A, value, body: untyped) =
     var value {.inject.} = addr(t.data[index].val)
     body
 
-template withValue*[A, B](t: var Table[A, B], key: A,
+template withValue*[A, B](t: var Table[A, B], key: A or KeyOf[A],
                           value, body1, body2: untyped) =
   ## Retrieves the value at ``t[key]``.
   ##
@@ -749,7 +751,7 @@ iterator mvalues*[A, B](t: var Table[A, B]): var B =
       yield t.data[h].val
       assert(len(t) == L, "the length of the table changed while iterating over it")
 
-iterator allValues*[A, B](t: Table[A, B]; key: A): B =
+iterator allValues*[A, B](t: Table[A, B]; key: A or KeyOf[A]): B =
   ## Iterates over any value in the table ``t`` that belongs to the given ``key``.
   ##
   ## Used if you have a table with duplicate keys (as a result of using
@@ -821,7 +823,7 @@ proc newTableFrom*[A, B, C](collection: A, index: proc(x: B): C): <//>TableRef[C
   for item in collection:
     result[index(item)] = item
 
-proc `[]`*[A, B](t: TableRef[A, B], key: A): var B =
+proc `[]`*[A, B](t: TableRef[A, B], key: A or KeyOf[A]): var B =
   ## Retrieves the value at ``t[key]``.
   ##
   ## If ``key`` is not in ``t``, the  ``KeyError`` exception is raised.
@@ -861,7 +863,7 @@ proc `[]=`*[A, B](t: TableRef[A, B], key: A, val: B) =
 
   t[][key] = val
 
-proc hasKey*[A, B](t: TableRef[A, B], key: A): bool =
+proc hasKey*[A, B](t: TableRef[A, B], key: A or KeyOf[A]): bool =
   ## Returns true if ``key`` is in the table ``t``.
   ##
   ## See also:
@@ -879,7 +881,7 @@ proc hasKey*[A, B](t: TableRef[A, B], key: A): bool =
 
   result = t[].hasKey(key)
 
-proc contains*[A, B](t: TableRef[A, B], key: A): bool =
+proc contains*[A, B](t: TableRef[A, B], key: A or KeyOf[A]): bool =
   ## Alias of `hasKey proc<#hasKey,TableRef[A,B],A>`_ for use with
   ## the ``in`` operator.
   runnableExamples:
@@ -909,7 +911,7 @@ proc hasKeyOrPut*[A, B](t: var TableRef[A, B], key: A, val: B): bool =
 
   t[].hasKeyOrPut(key, val)
 
-proc getOrDefault*[A, B](t: TableRef[A, B], key: A): B =
+proc getOrDefault*[A, B](t: TableRef[A, B], key: A or KeyOf[A]): B =
   ## Retrieves the value at ``t[key]`` if ``key`` is in ``t``. Otherwise, the
   ## default initialization value for type ``B`` is returned (e.g. 0 for any
   ## integer type).
@@ -928,7 +930,7 @@ proc getOrDefault*[A, B](t: TableRef[A, B], key: A): B =
 
   getOrDefault(t[], key)
 
-proc getOrDefault*[A, B](t: TableRef[A, B], key: A, default: B): B =
+proc getOrDefault*[A, B](t: TableRef[A, B], key: A or KeyOf[A], default: B): B =
   ## Retrieves the value at ``t[key]`` if ``key`` is in ``t``.
   ## Otherwise, ``default`` is returned.
   ##
@@ -983,7 +985,7 @@ proc add*[A, B](t: TableRef[A, B], key: A, val: B) =
   ## (key, value) pair in the table without introducing duplicates.
   t[].add(key, val)
 
-proc del*[A, B](t: TableRef[A, B], key: A) =
+proc del*[A, B](t: TableRef[A, B], key: A or KeyOf[A]) =
   ## Deletes ``key`` from hash table ``t``. Does nothing if the key does not exist.
   ##
   ## **If duplicate keys were added, this may need to be called multiple times.**
@@ -1000,7 +1002,7 @@ proc del*[A, B](t: TableRef[A, B], key: A) =
 
   t[].del(key)
 
-proc pop*[A, B](t: TableRef[A, B], key: A, val: var B): bool =
+proc pop*[A, B](t: TableRef[A, B], key: A or KeyOf[A], val: var B): bool =
   ## Deletes the ``key`` from the table.
   ## Returns ``true``, if the ``key`` existed, and sets ``val`` to the
   ## mapping of the key. Otherwise, returns ``false``, and the ``val`` is
@@ -1025,7 +1027,8 @@ proc pop*[A, B](t: TableRef[A, B], key: A, val: var B): bool =
 
   result = t[].pop(key, val)
 
-proc take*[A, B](t: TableRef[A, B], key: A, val: var B): bool {.inline.} =
+proc take*[A, B](t: TableRef[A, B], key: A or KeyOf[A],
+                 val: var B): bool {.inline.} =
   ## Alias for:
   ## * `pop proc<#pop,TableRef[A,B],A,B>`_
   pop(t, key, val)
@@ -1211,13 +1214,16 @@ type
 
 # ------------------------------ helpers ---------------------------------
 
-proc rawGetKnownHC[A, B](t: OrderedTable[A, B], key: A, hc: Hash): int =
+proc rawGetKnownHC[A, B](t: OrderedTable[A, B], key: A or KeyOf[A],
+                         hc: Hash): int =
   rawGetKnownHCImpl()
 
-proc rawGetDeep[A, B](t: OrderedTable[A, B], key: A, hc: var Hash): int {.inline.} =
+proc rawGetDeep[A, B](t: OrderedTable[A, B], key: A or KeyOf[A],
+                      hc: var Hash): int {.inline.} =
   rawGetDeepImpl()
 
-proc rawGet[A, B](t: OrderedTable[A, B], key: A, hc: var Hash): int =
+proc rawGet[A, B](t: OrderedTable[A, B], key: A or KeyOf[A],
+                  hc: var Hash): int =
   rawGetImpl()
 
 proc rawInsert[A, B](t: var OrderedTable[A, B],
@@ -1312,7 +1318,7 @@ proc toOrderedTable*[A, B](pairs: openArray[(A, B)]): OrderedTable[A, B] =
   result = initOrderedTable[A, B](rightSize(pairs.len))
   for key, val in items(pairs): result[key] = val
 
-proc `[]`*[A, B](t: OrderedTable[A, B], key: A): B =
+proc `[]`*[A, B](t: OrderedTable[A, B], key: A or KeyOf[A]): B =
   ## Retrieves the value at ``t[key]``.
   ##
   ## If ``key`` is not in ``t``, the  ``KeyError`` exception is raised.
@@ -1336,7 +1342,7 @@ proc `[]`*[A, B](t: OrderedTable[A, B], key: A): B =
 
   get(t, key)
 
-proc `[]`*[A, B](t: var OrderedTable[A, B], key: A): var B =
+proc `[]`*[A, B](t: var OrderedTable[A, B], key: A or KeyOf[A]): var B =
   ## Retrieves the value at ``t[key]``. The value can be modified.
   ##
   ## If ``key`` is not in ``t``, the ``KeyError`` exception is raised.
@@ -1352,7 +1358,7 @@ proc `[]`*[A, B](t: var OrderedTable[A, B], key: A): var B =
   ##   key is in the table
   get(t, key)
 
-proc hasKey*[A, B](t: OrderedTable[A, B], key: A): bool =
+proc hasKey*[A, B](t: OrderedTable[A, B], key: A or KeyOf[A]): bool =
   ## Returns true if ``key`` is in the table ``t``.
   ##
   ## See also:
@@ -1371,7 +1377,7 @@ proc hasKey*[A, B](t: OrderedTable[A, B], key: A): bool =
   var hc: Hash
   result = rawGet(t, key, hc) >= 0
 
-proc contains*[A, B](t: OrderedTable[A, B], key: A): bool =
+proc contains*[A, B](t: OrderedTable[A, B], key: A or KeyOf[A]): bool =
   ## Alias of `hasKey proc<#hasKey,OrderedTable[A,B],A>`_ for use with
   ## the ``in`` operator.
   runnableExamples:
@@ -1401,7 +1407,7 @@ proc hasKeyOrPut*[A, B](t: var OrderedTable[A, B], key: A, val: B): bool =
 
   hasKeyOrPutImpl(enlarge)
 
-proc getOrDefault*[A, B](t: OrderedTable[A, B], key: A): B =
+proc getOrDefault*[A, B](t: OrderedTable[A, B], key: A or KeyOf[A]): B =
   ## Retrieves the value at ``t[key]`` if ``key`` is in ``t``. Otherwise, the
   ## default initialization value for type ``B`` is returned (e.g. 0 for any
   ## integer type).
@@ -1420,7 +1426,8 @@ proc getOrDefault*[A, B](t: OrderedTable[A, B], key: A): B =
 
   getOrDefaultImpl(t, key)
 
-proc getOrDefault*[A, B](t: OrderedTable[A, B], key: A, default: B): B =
+proc getOrDefault*[A, B](t: OrderedTable[A, B], key: A or KeyOf[A],
+                         default: B): B =
   ## Retrieves the value at ``t[key]`` if ``key`` is in ``t``.
   ## Otherwise, ``default`` is returned.
   ##
@@ -1475,7 +1482,7 @@ proc add*[A, B](t: var OrderedTable[A, B], key: A, val: B) =
   ## (key, value) pair in the table without introducing duplicates.
   addImpl(enlarge)
 
-proc del*[A, B](t: var OrderedTable[A, B], key: A) =
+proc del*[A, B](t: var OrderedTable[A, B], key: A or KeyOf[A]) =
   ## Deletes ``key`` from hash table ``t``. Does nothing if the key does not exist.
   ##
   ## O(n) complexity.
@@ -1508,7 +1515,8 @@ proc del*[A, B](t: var OrderedTable[A, B], key: A) =
         rawInsert(t, t.data, move n[h].key, move n[h].val, n[h].hcode, j)
     h = nxt
 
-proc pop*[A, B](t: var OrderedTable[A, B], key: A, val: var B): bool {.since: (1, 1).} =
+proc pop*[A, B](t: var OrderedTable[A, B], key: A or KeyOf[A],
+                val: var B): bool {.since: (1, 1).} =
   ## Deletes the ``key`` from the table.
   ## Returns ``true``, if the ``key`` existed, and sets ``val`` to the
   ## mapping of the key. Otherwise, returns ``false``, and the ``val`` is
@@ -1807,7 +1815,7 @@ proc newOrderedTable*[A, B](pairs: openArray[(A, B)]): <//>OrderedTableRef[A, B]
   for key, val in items(pairs): result.add(key, val)
 
 
-proc `[]`*[A, B](t: OrderedTableRef[A, B], key: A): var B =
+proc `[]`*[A, B](t: OrderedTableRef[A, B], key: A or KeyOf[A]): var B =
   ## Retrieves the value at ``t[key]``.
   ##
   ## If ``key`` is not in ``t``, the  ``KeyError`` exception is raised.
@@ -1846,7 +1854,7 @@ proc `[]=`*[A, B](t: OrderedTableRef[A, B], key: A, val: B) =
 
   t[][key] = val
 
-proc hasKey*[A, B](t: OrderedTableRef[A, B], key: A): bool =
+proc hasKey*[A, B](t: OrderedTableRef[A, B], key: A or KeyOf[A]): bool =
   ## Returns true if ``key`` is in the table ``t``.
   ##
   ## See also:
@@ -1864,7 +1872,7 @@ proc hasKey*[A, B](t: OrderedTableRef[A, B], key: A): bool =
 
   result = t[].hasKey(key)
 
-proc contains*[A, B](t: OrderedTableRef[A, B], key: A): bool =
+proc contains*[A, B](t: OrderedTableRef[A, B], key: A or KeyOf[A]): bool =
   ## Alias of `hasKey proc<#hasKey,OrderedTableRef[A,B],A>`_ for use with
   ## the ``in`` operator.
   runnableExamples:
@@ -1894,7 +1902,7 @@ proc hasKeyOrPut*[A, B](t: var OrderedTableRef[A, B], key: A, val: B): bool =
 
   result = t[].hasKeyOrPut(key, val)
 
-proc getOrDefault*[A, B](t: OrderedTableRef[A, B], key: A): B =
+proc getOrDefault*[A, B](t: OrderedTableRef[A, B], key: A or KeyOf[A]): B =
   ## Retrieves the value at ``t[key]`` if ``key`` is in ``t``. Otherwise, the
   ## default initialization value for type ``B`` is returned (e.g. 0 for any
   ## integer type).
@@ -1913,7 +1921,8 @@ proc getOrDefault*[A, B](t: OrderedTableRef[A, B], key: A): B =
 
   getOrDefault(t[], key)
 
-proc getOrDefault*[A, B](t: OrderedTableRef[A, B], key: A, default: B): B =
+proc getOrDefault*[A, B](t: OrderedTableRef[A, B], key: A or KeyOf[A],
+                         default: B): B =
   ## Retrieves the value at ``t[key]`` if ``key`` is in ``t``.
   ## Otherwise, ``default`` is returned.
   ##
@@ -1968,7 +1977,7 @@ proc add*[A, B](t: OrderedTableRef[A, B], key: A, val: B) =
   ## (key, value) pair in the table without introducing duplicates.
   t[].add(key, val)
 
-proc del*[A, B](t: OrderedTableRef[A, B], key: A) =
+proc del*[A, B](t: OrderedTableRef[A, B], key: A or KeyOf[A]) =
   ## Deletes ``key`` from hash table ``t``. Does nothing if the key does not exist.
   ##
   ## See also:
@@ -1982,7 +1991,8 @@ proc del*[A, B](t: OrderedTableRef[A, B], key: A) =
 
   t[].del(key)
 
-proc pop*[A, B](t: OrderedTableRef[A, B], key: A, val: var B): bool {.since: (1, 1).} =
+proc pop*[A, B](t: OrderedTableRef[A, B], key: A or KeyOf[A],
+                val: var B): bool {.since: (1, 1).} =
   ## Deletes the ``key`` from the table.
   ## Returns ``true``, if the ``key`` existed, and sets ``val`` to the
   ## mapping of the key. Otherwise, returns ``false``, and the ``val`` is
@@ -2218,25 +2228,27 @@ proc enlarge[A](t: var CountTable[A]) =
     if t.data[i].val != 0: ctRawInsert(t, n, move t.data[i].key, move t.data[i].val)
   swap(t.data, n)
 
-proc remove[A](t: var CountTable[A], key: A) =
+proc remove[A](t: var CountTable[A], key: A or KeyOf[A]) =
+  mixin keyOf
   var n: seq[tuple[key: A, val: int]]
   newSeq(n, len(t.data))
   var removed: bool
   for i in countup(0, high(t.data)):
     if t.data[i].val != 0:
-      if t.data[i].key != key:
+      if keyOf(t.data[i].key) != key:
         ctRawInsert(t, n, move t.data[i].key, move t.data[i].val)
       else:
         removed = true
   swap(t.data, n)
   if removed: dec(t.counter)
 
-proc rawGet[A](t: CountTable[A], key: A): int =
+proc rawGet[A](t: CountTable[A], key: A or KeyOf[A]): int =
+  mixin keyOf
   if t.data.len == 0:
     return -1
   var h: Hash = hash(key) and high(t.data) # start with real hash value
   while t.data[h].val != 0:
-    if t.data[h].key == key: return h
+    if keyOf(t.data[h].key) == key: return h
     h = nextTry(h, high(t.data))
   result = -1 - h # < 0 => MISSING; insert idx = -1 - result
 
@@ -2244,7 +2256,7 @@ template ctget(t, key, default: untyped): untyped =
   var index = rawGet(t, key)
   result = if index >= 0: t.data[index].val else: default
 
-proc inc*[A](t: var CountTable[A], key: A, val: Positive = 1)
+proc inc*[A](t: var CountTable[A], key: A or KeyOf[A], val: Positive = 1)
 
 # ----------------------------------------------------------------------
 
@@ -2272,7 +2284,7 @@ proc toCountTable*[A](keys: openArray[A]): CountTable[A] =
   result = initCountTable[A](rightSize(keys.len))
   for key in items(keys): result.inc(key)
 
-proc `[]`*[A](t: CountTable[A], key: A): int =
+proc `[]`*[A](t: CountTable[A], key: A or KeyOf[A]): int =
   ## Retrieves the value at ``t[key]`` if ``key`` is in ``t``.
   ## Otherwise ``0`` is returned.
   ##
@@ -2305,7 +2317,7 @@ proc `[]=`*[A](t: var CountTable[A], key: A, val: int) =
     else:
       insertImpl()
 
-proc inc*[A](t: var CountTable[A], key: A, val: Positive = 1) =
+proc inc*[A](t: var CountTable[A], key: A or KeyOf[A], val: Positive = 1) =
   ## Increments ``t[key]`` by ``val`` (default: 1).
   ##
   ## ``val`` must be a positive number. If you need to decrement a value,
@@ -2349,7 +2361,7 @@ proc largest*[A](t: CountTable[A]): tuple[key: A, val: int] =
   result.key = t.data[maxIdx].key
   result.val = t.data[maxIdx].val
 
-proc hasKey*[A](t: CountTable[A], key: A): bool =
+proc hasKey*[A](t: CountTable[A], key: A or KeyOf[A]): bool =
   ## Returns true if ``key`` is in the table ``t``.
   ##
   ## See also:
@@ -2361,12 +2373,13 @@ proc hasKey*[A](t: CountTable[A], key: A): bool =
   assert(not t.isSorted, "CountTable must not be used after sorting")
   result = rawGet(t, key) >= 0
 
-proc contains*[A](t: CountTable[A], key: A): bool =
+proc contains*[A](t: CountTable[A], key: A or KeyOf[A]): bool =
   ## Alias of `hasKey proc<#hasKey,CountTable[A],A>`_ for use with
   ## the ``in`` operator.
   return hasKey[A](t, key)
 
-proc getOrDefault*[A](t: CountTable[A], key: A; default: int = 0): int =
+proc getOrDefault*[A](t: CountTable[A], key: A or KeyOf[A];
+                      default: int = 0): int =
   ## Retrieves the value at ``t[key]`` if``key`` is in ``t``. Otherwise, the
   ## integer value of ``default`` is returned.
   ##
@@ -2380,7 +2393,7 @@ proc len*[A](t: CountTable[A]): int =
   ## Returns the number of keys in ``t``.
   result = t.counter
 
-proc del*[A](t: var CountTable[A], key: A) {.since: (1, 1).} =
+proc del*[A](t: var CountTable[A], key: A or KeyOf[A]) {.since: (1, 1).} =
   ## Deletes ``key`` from table ``t``. Does nothing if the key does not exist.
   ##
   ## O(n) complexity.
@@ -2399,7 +2412,8 @@ proc del*[A](t: var CountTable[A], key: A) {.since: (1, 1).} =
 
   remove(t, key)
 
-proc pop*[A](t: var CountTable[A], key: A, val: var int): bool {.since: (1, 1).} =
+proc pop*[A](t: var CountTable[A], key: A or KeyOf[A],
+             val: var int): bool {.since: (1, 1).} =
   ## Deletes the ``key`` from the table.
   ## Returns ``true``, if the ``key`` existed, and sets ``val`` to the
   ## mapping of the key. Otherwise, returns ``false``, and the ``val`` is
@@ -2612,7 +2626,7 @@ iterator mvalues*[A](t: var CountTable[A]): var int =
 # ---------------------------- CountTableRef --------------------------------
 # ---------------------------------------------------------------------------
 
-proc inc*[A](t: CountTableRef[A], key: A, val = 1)
+proc inc*[A](t: CountTableRef[A], key: A or KeyOf[A], val = 1)
 
 proc newCountTable*[A](initialSize = defaultInitialSize): <//>CountTableRef[A] =
   ## Creates a new ref count table that is empty.
@@ -2637,7 +2651,7 @@ proc newCountTable*[A](keys: openArray[A]): <//>CountTableRef[A] =
   result = newCountTable[A](rightSize(keys.len))
   for key in items(keys): result.inc(key)
 
-proc `[]`*[A](t: CountTableRef[A], key: A): int =
+proc `[]`*[A](t: CountTableRef[A], key: A or KeyOf[A]): int =
   ## Retrieves the value at ``t[key]`` if ``key`` is in ``t``.
   ## Otherwise ``0`` is returned.
   ##
@@ -2661,7 +2675,7 @@ proc `[]=`*[A](t: CountTableRef[A], key: A, val: int) =
   assert val > 0
   t[][key] = val
 
-proc inc*[A](t: CountTableRef[A], key: A, val = 1) =
+proc inc*[A](t: CountTableRef[A], key: A or KeyOf[A], val = 1) =
   ## Increments ``t[key]`` by ``val`` (default: 1).
   runnableExamples:
     var a = newCountTable("aab")
@@ -2684,7 +2698,7 @@ proc largest*[A](t: CountTableRef[A]): (A, int) =
   ## * `smallest proc<#smallest,CountTable[A]>`_
   t[].largest
 
-proc hasKey*[A](t: CountTableRef[A], key: A): bool =
+proc hasKey*[A](t: CountTableRef[A], key: A or KeyOf[A]): bool =
   ## Returns true if ``key`` is in the table ``t``.
   ##
   ## See also:
@@ -2695,12 +2709,13 @@ proc hasKey*[A](t: CountTableRef[A], key: A): bool =
   ##   a custom value if the key doesn't exist
   result = t[].hasKey(key)
 
-proc contains*[A](t: CountTableRef[A], key: A): bool =
+proc contains*[A](t: CountTableRef[A], key: A or KeyOf[A]): bool =
   ## Alias of `hasKey proc<#hasKey,CountTableRef[A],A>`_ for use with
   ## the ``in`` operator.
   return hasKey[A](t, key)
 
-proc getOrDefault*[A](t: CountTableRef[A], key: A, default: int): int =
+proc getOrDefault*[A](t: CountTableRef[A], key: A or KeyOf[A],
+                      default: int): int =
   ## Retrieves the value at ``t[key]`` if``key`` is in ``t``. Otherwise, the
   ## integer value of ``default`` is returned.
   ##
@@ -2714,7 +2729,7 @@ proc len*[A](t: CountTableRef[A]): int =
   ## Returns the number of keys in ``t``.
   result = t.counter
 
-proc del*[A](t: CountTableRef[A], key: A) {.since: (1, 1).} =
+proc del*[A](t: CountTableRef[A], key: A or KeyOf[A]) {.since: (1, 1).} =
   ## Deletes ``key`` from table ``t``. Does nothing if the key does not exist.
   ##
   ## O(n) complexity.
@@ -2724,7 +2739,8 @@ proc del*[A](t: CountTableRef[A], key: A) {.since: (1, 1).} =
   ## * `clear proc<#clear,CountTableRef[A]>`_ to empty the whole table
   del(t[], key)
 
-proc pop*[A](t: CountTableRef[A], key: A, val: var int): bool {.since: (1, 1).} =
+proc pop*[A](t: CountTableRef[A], key: A or KeyOf[A],
+             val: var int): bool {.since: (1, 1).} =
   ## Deletes the ``key`` from the table.
   ## Returns ``true``, if the ``key`` existed, and sets ``val`` to the
   ## mapping of the key. Otherwise, returns ``false``, and the ``val`` is
@@ -3200,3 +3216,22 @@ when isMainModule:
     d.inc("f")
     merge(d, e)
     doAssert d["f"] == 7
+
+  type
+    LargeObject = object
+      s: string
+      i: int
+      f: float
+
+  proc hash(obj: LargeObject): Hash = hash(obj.i)
+
+  block keyOfTest:
+    var t: Table[LargeObject, string]
+    t.add LargeObject(s: "first", i: 1, f: 1.0), "1"
+    t.add LargeObject(s: "second", i: 2, f: 2.0), "2"
+    t.add LargeObject(s: "second", i: 2, f: 2.1), "2.1"
+    t.add LargeObject(s: "two", i:2, f: 2.0), "2"
+
+    template keyOf(obj: LargeObject): float = obj.f
+
+    doAssert t.hasKey(2.0)

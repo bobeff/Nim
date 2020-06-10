@@ -136,7 +136,7 @@ proc initHashSet*[A](initialSize = defaultInitialSize): HashSet[A] =
 
   result.init(initialSize)
 
-proc `[]`*[A](s: var HashSet[A], key: A): var A =
+proc `[]`*[A](s: var HashSet[A], key: A or KeyOf[A]): var A =
   ## Returns the element that is actually stored in `s` which has the same
   ## value as `key` or raises the ``KeyError`` exception.
   ##
@@ -151,7 +151,7 @@ proc `[]`*[A](s: var HashSet[A], key: A): var A =
     else:
       raise newException(KeyError, "key not found")
 
-proc contains*[A](s: HashSet[A], key: A): bool =
+proc contains*[A](s: HashSet[A], key: A or KeyOf[A]): bool =
   ## Returns true if `key` is in `s`.
   ##
   ## This allows the usage of `in` operator.
@@ -269,7 +269,7 @@ proc containsOrIncl*[A](s: var HashSet[A], key: A): bool =
 
   containsOrInclImpl()
 
-proc excl*[A](s: var HashSet[A], key: A) =
+proc excl*[A](s: var HashSet[A], key: A or KeyOf[A]) =
   ## Excludes `key` from the set `s`.
   ##
   ## This doesn't do anything if `key` is not found in `s`.
@@ -305,7 +305,7 @@ proc excl*[A](s: var HashSet[A], other: HashSet[A]) =
 
   for item in other: discard exclImpl(s, item)
 
-proc missingOrExcl*[A](s: var HashSet[A], key: A): bool =
+proc missingOrExcl*[A](s: var HashSet[A], key: A or KeyOf[A]): bool =
   ## Excludes `key` in the set `s` and tells if `key` was already missing from `s`.
   ##
   ## The difference with regards to the `excl proc <#excl,HashSet[A],A>`_ is
@@ -692,7 +692,7 @@ proc toOrderedSet*[A](keys: openArray[A]): OrderedSet[A] =
   result = initOrderedSet[A](rightSize(keys.len))
   for key in items(keys): result.incl(key)
 
-proc contains*[A](s: OrderedSet[A], key: A): bool =
+proc contains*[A](s: OrderedSet[A], key: A or KeyOf[A]): bool =
   ## Returns true if `key` is in `s`.
   ##
   ## This allows the usage of `in` operator.
@@ -765,7 +765,7 @@ proc containsOrIncl*[A](s: var OrderedSet[A], key: A): bool =
 
   containsOrInclImpl()
 
-proc excl*[A](s: var OrderedSet[A], key: A) =
+proc excl*[A](s: var OrderedSet[A], key: A or KeyOf[A]) =
   ## Excludes `key` from the set `s`. Efficiency: `O(n)`.
   ##
   ## This doesn't do anything if `key` is not found in `s`.
@@ -781,7 +781,7 @@ proc excl*[A](s: var OrderedSet[A], key: A) =
 
   discard exclImpl(s, key)
 
-proc missingOrExcl*[A](s: var OrderedSet[A], key: A): bool =
+proc missingOrExcl*[A](s: var OrderedSet[A], key: A or KeyOf[A]): bool =
   ## Excludes `key` in the set `s` and tells if `key` was already missing from `s`.
   ## Efficiency: O(n).
   ##

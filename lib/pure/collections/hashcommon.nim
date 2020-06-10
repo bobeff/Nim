@@ -10,6 +10,16 @@
 # An ``include`` file which contains common code for
 # hash sets and tables.
 
+template isSameType(T, U: type): bool =
+  T is U and U is T
+
+type
+  KeyOf[T] = concept type Matched
+    mixin keyOf
+    type Key = T.default.keyOf.typeof
+    isSameType(T, Key) == false
+    isSameType(Matched, Key)
+
 const
   growthFactor = 2
 
@@ -17,6 +27,8 @@ when not defined(nimHasDefault):
   template default[T](t: typedesc[T]): T =
     var v: T
     v
+
+template keyOf(obj: auto): auto = obj
 
 # hcode for real keys cannot be zero.  hcode==0 signifies an empty slot.  These
 # two procs retain clarity of that encoding without the space cost of an enum.
@@ -43,6 +55,7 @@ proc rightSize*(count: Natural): int {.inline.} =
   result = nextPowerOfTwo(count * 3 div 2 + 4)
 
 template rawGetKnownHCImpl() {.dirty.} =
+  mixin keyOf
   if t.dataLen == 0:
     return -1
   var h: Hash = hc and maxHash(t) # start with real hash value
@@ -51,7 +64,7 @@ template rawGetKnownHCImpl() {.dirty.} =
     # zero ==key's for missing (e.g.inserts) and exactly one ==key for present.
     # It does slow down succeeding lookups by one extra Hash cmp&and..usually
     # just a few clock cycles, generally worth it for any non-integer-like A.
-    if t.data[h].hcode == hc and t.data[h].key == key:
+    if t.data[h].hcode == hc and keyOf(t.data[h].key) == key:
       return h
     h = nextTry(h, maxHash(t))
   result = -1 - h # < 0 => MISSING; insert idx = -1 - result

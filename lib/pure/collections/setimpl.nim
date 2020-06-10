@@ -73,7 +73,7 @@ template doWhile(a, b) =
     b
     if not a: break
 
-proc exclImpl[A](s: var HashSet[A], key: A): bool {.inline.} =
+proc exclImpl[A](s: var HashSet[A], key: A or KeyOf[A]): bool {.inline.} =
   var hc: Hash
   var i = rawGet(s, key, hc)
   var msk = high(s.data)
@@ -105,7 +105,8 @@ template dollarImpl() {.dirty.} =
 
 # --------------------------- OrderedSet ------------------------------
 
-proc rawGet[A](t: OrderedSet[A], key: A, hc: var Hash): int {.inline.} =
+proc rawGet[A](t: OrderedSet[A], key: A or KeyOf[A],
+               hc: var Hash): int {.inline.} =
   rawGetImpl()
 
 proc rawInsert[A](s: var OrderedSet[A], data: var OrderedKeyValuePairSeq[A],
@@ -130,7 +131,8 @@ proc enlarge[A](s: var OrderedSet[A]) =
       rawInsert(s, s.data, n[h].key, n[h].hcode, j)
     h = nxt
 
-proc exclImpl[A](s: var OrderedSet[A], key: A): bool {.inline.} =
+proc exclImpl[A](s: var OrderedSet[A], key: A or KeyOf[A]): bool {.inline.} =
+  mixin keyOf
   if len(s.data) == 0:
     return true
   var n: OrderedKeyValuePairSeq[A]
@@ -144,7 +146,7 @@ proc exclImpl[A](s: var OrderedSet[A], key: A): bool {.inline.} =
   while h >= 0:
     var nxt = n[h].next
     if isFilled(n[h].hcode):
-      if n[h].hcode == hc and n[h].key == key:
+      if n[h].hcode == hc and keyOf(n[h].key) == key:
         dec s.counter
         result = false
       else:
